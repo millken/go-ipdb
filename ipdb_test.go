@@ -23,6 +23,15 @@ func TestHeader(t *testing.T) {
 	if err == nil { t.Logf("find %s => %s", ip, result)}
 }
 
+func TestLookup(t *testing.T) {
+	if db, err = Load(data); err != nil {
+		t.Fatal("Init failed:", err)
+	}
+	t.Logf("db Header = %v", db.Head)
+	ip := "152.63.123.32"
+	result, err := db.Lookup(ip)
+	if err == nil { t.Logf("lookup %s country=> %s", ip, result.Country)}
+}
 
 //-----------------------------------------------------------------------------
 

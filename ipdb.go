@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"math"
 	"net"
+	"strings"
 	//"fmt"
 )
 
@@ -30,6 +31,10 @@ type DB struct {
 	Head Header
 	Dc   map[uint16]string
 	Data []byte
+}
+
+type Base struct {
+	Country, City, Isp string
 }
 
 func Load(dataFile string) (db *DB, err error) {
@@ -84,6 +89,16 @@ func (db *DB) Find(ipv4 string) (result string, err error) {
 		return "", err
 	}
 	return db.FindByUint(ip32)
+}
+
+func (db *DB) Lookup(ipv4 string) (*Base, error) {
+	result , err := db.Find(ipv4)
+	if err != nil {
+		return nil, err
+	}
+	ip := strings.SplitN(result, "\t", 3)
+	return &Base{ip[0], strings.TrimSpace(ip[1]), strings.Trim(ip[2], "\u0000")}, nil
+
 }
 
 func (db *DB) FindByUint(ip32 uint32) (result string, err error) {
