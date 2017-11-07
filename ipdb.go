@@ -3,38 +3,59 @@ package ipdb
 import (
 	"encoding/binary"
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"math"
 	"net"
-	"strings"
 	//"fmt"
 )
 
+// Header struct
 type Header struct {
-	version uint32 // version number
-	rec_len uint32 // records number
-	dc_len  uint16 //datacenter number
+	version      uint32
+	continentLen uint32
+	countryLen   uint32
+	areaLen      uint32
+	regionLen    uint32
+	cityLen      uint32
+	ispLen       uint32
+	netLen       uint32
 }
 
+// Record struct
 type Record struct {
-	ip   uint32 //ip
-	mask uint8  //mask
-	id   uint16 //index number
+	ip          uint32 //ip
+	mask        uint8  //mask
+	continentID uint32
+	countryID   uint32
+	areaID      uint32
+	regionID    uint32
+	cityID      uint32
+	ispID       uint32
 }
 
-type Datacenter struct {
-	id   uint16
+// Hdata struct
+type Hdata struct {
+	id   uint32
 	name string
 }
 
+// DB struct
 type DB struct {
-	Head Header
-	Dc   map[uint16]string
-	Data []byte
+	Head      Header
+	Continent map[uint32]string
+	Country   map[uint32]string
+	Area      map[uint32]string
+	Region    map[uint32]string
+	City      map[uint32]string
+	Isp       map[uint32]string
+	Rstart    int
+	Data      []byte
 }
 
-type Base struct {
-	Country, City, Isp string
+// Result structs
+type Result struct {
+	Cidr, Continent, Country, Area, Region, City, Isp string
 }
 
 func Load(dataFile string) (db *DB, err error) {
@@ -47,7 +68,7 @@ func Load(dataFile string) (db *DB, err error) {
 	return
 }
 
-func Ip2long(ipv4 string) (ret uint32, err error) {
+func IP2long(ipv4 string) (ret uint32, err error) {
 	ret = 0
 	ip := net.ParseIP(ipv4)
 	if ip == nil {
@@ -65,66 +86,144 @@ func (db *DB) Init(data []byte) {
 	db.Head = Header{
 		binary.BigEndian.Uint32(data[:4]),
 		binary.BigEndian.Uint32(data[4 : 4+4]),
-		binary.BigEndian.Uint16(data[8 : 8+2]),
+		binary.BigEndian.Uint32(data[8 : 8+4]),
+		binary.BigEndian.Uint32(data[12 : 12+4]),
+		binary.BigEndian.Uint32(data[16 : 16+4]),
+		binary.BigEndian.Uint32(data[20 : 20+4]),
+		binary.BigEndian.Uint32(data[24 : 24+4]),
+		binary.BigEndian.Uint32(data[28 : 28+4]),
 	}
-	//fmt.Printf("head = %v", db.Head)
-	db.Dc = make(map[uint16]string, db.Head.dc_len)
-	for i := 0; i < int(db.Head.dc_len); i++ {
-		dc_pos := 10 + int(db.Head.rec_len)*7 + i*34
-		dc_pack := data[dc_pos : dc_pos+34]
-		dc := Datacenter{
-			binary.BigEndian.Uint16(dc_pack[:2]),
-			string(dc_pack[2 : 2+32]),
+	//fmt.Printf("head = %+v", db.Head)
+	db.Continent = make(map[uint32]string, db.Head.continentLen)
+	for i := 0; i < int(db.Head.continentLen); i++ {
+		pos := 32 + i*6
+		pack := data[pos : pos+4]
+		dc := Hdata{
+			binary.BigEndian.Uint32(pack[:4]),
+			string(pack[4 : 4+2]),
 		}
-		db.Dc[dc.id] = dc.name
-		//fmt.Printf("dc = %v", dc)
+		db.Continent[dc.id] = dc.name
+		//fmt.Printf("dc = %+v", dc)
 	}
+	db.Country = make(map[uint32]string, db.Head.countryLen)
+	for i := 0; i < int(db.Head.countryLen); i++ {
+		pos := 32 + int(db.Head.continentLen)*6 + i*6
+		pack := data[pos : pos+4]
+		dc := Hdata{
+			binary.BigEndian.Uint32(pack[:4]),
+			string(pack[4 : 4+2]),
+		}
+		db.Country[dc.id] = dc.name
+		//fmt.Printf("dc = %+v", dc)
+	}
+	db.Area = make(map[uint32]string, db.Head.areaLen)
+	for i := 0; i < int(db.Head.areaLen); i++ {
+		pos := 32 + int(db.Head.continentLen)*6 + int(db.Head.countryLen)*6 + i*68
+		pack := data[pos : pos+68]
+		dc := Hdata{
+			binary.BigEndian.Uint32(pack[:4]),
+			string(pack[4 : 4+64]),
+		}
+		db.Area[dc.id] = dc.name
+		//fmt.Printf("dc = %+v", dc)
+	}
+	db.Region = make(map[uint32]string, db.Head.regionLen)
+	for i := 0; i < int(db.Head.regionLen); i++ {
+		pos := 32 + int(db.Head.continentLen)*6 + int(db.Head.countryLen)*6 +
+			int(db.Head.areaLen)*68 + i*68
+		pack := data[pos : pos+68]
+		dc := Hdata{
+			binary.BigEndian.Uint32(pack[:4]),
+			string(pack[4 : 4+64]),
+		}
+		db.Region[dc.id] = dc.name
+		//fmt.Printf("dc = %+v", dc)
+	}
+	db.City = make(map[uint32]string, db.Head.cityLen)
+	for i := 0; i < int(db.Head.cityLen); i++ {
+		pos := 32 + int(db.Head.continentLen)*6 + int(db.Head.countryLen)*6 +
+			int(db.Head.areaLen)*68 + int(db.Head.regionLen)*68 + i*68
+		pack := data[pos : pos+68]
+		dc := Hdata{
+			binary.BigEndian.Uint32(pack[:4]),
+			string(pack[4 : 4+64]),
+		}
+		db.City[dc.id] = dc.name
+		//fmt.Printf("dc = %+v", dc)
+	}
+	db.Isp = make(map[uint32]string, db.Head.ispLen)
+	for i := 0; i < int(db.Head.ispLen); i++ {
+		pos := 32 + int(db.Head.continentLen)*6 + int(db.Head.countryLen)*6 +
+			int(db.Head.areaLen)*68 + int(db.Head.regionLen)*68 + int(db.Head.cityLen)*68 + i*68
+		pack := data[pos : pos+68]
+		dc := Hdata{
+			binary.BigEndian.Uint32(pack[:4]),
+			string(pack[4 : 4+64]),
+		}
+		db.Isp[dc.id] = dc.name
+		//fmt.Printf("dc = %+v", dc)
+	}
+	db.Rstart = 32 + int(db.Head.continentLen)*6 + int(db.Head.countryLen)*6 +
+		int(db.Head.areaLen)*68 + int(db.Head.regionLen)*68 + int(db.Head.cityLen)*68 +
+		int(db.Head.ispLen)*68
 	db.Data = data
 	return
 }
 
-func (db *DB) Find(ipv4 string) (result string, err error) {
+func (db *DB) Find(ipv4 string) (result *Result, err error) {
 	var ip32 uint32
-	if ip32, err = Ip2long(ipv4); err != nil {
-		return "", err
+	if ip32, err = IP2long(ipv4); err != nil {
+		return nil, err
 	}
 	return db.FindByUint(ip32)
 }
 
-func (db *DB) Lookup(ipv4 string) (*Base, error) {
-	result , err := db.Find(ipv4)
-	if err != nil {
-		return nil, err
-	}
-	ip := strings.SplitN(result, "\t", 3)
-	return &Base{ip[0], strings.TrimSpace(ip[1]), strings.Trim(ip[2], "\u0000")}, nil
-
+func (db *DB) Lookup(ipv4 string) (*Result, error) {
+	return nil, nil
 }
 
-func (db *DB) FindByUint(ip32 uint32) (result string, err error) {
+func (db *DB) FindByUint(ip32 uint32) (result *Result, err error) {
 	f := 0
 	n := 0
-	l := int(db.Head.rec_len) - 1
+	l := int(db.Head.netLen) - 1
 	for f <= l {
 		m := int((f + l) / 2)
 		n = n + 1
-		p := 10 + m*7
-		rec_pack := db.Data[p : p+7]
-		record := Record{
-			binary.BigEndian.Uint32(rec_pack[:4]),
-			uint8(rec_pack[4 : 4+1][0]),
-			binary.BigEndian.Uint16(rec_pack[5 : 5+2]),
+		p := db.Rstart + m*29
+		pack := db.Data[p : p+29]
+		r := Record{
+			binary.BigEndian.Uint32(pack[:4]),
+			uint8(pack[4 : 4+1][0]),
+			binary.BigEndian.Uint32(pack[5 : 5+4]),
+			binary.BigEndian.Uint32(pack[9 : 9+4]),
+			binary.BigEndian.Uint32(pack[13 : 13+4]),
+			binary.BigEndian.Uint32(pack[17 : 17+4]),
+			binary.BigEndian.Uint32(pack[21 : 21+4]),
+			binary.BigEndian.Uint32(pack[25 : 25+4]),
 		}
-		rs := record.ip
-		re := rs + uint32(math.Pow(2, float64(32-record.mask))) - 1
+		rs := r.ip
+		re := rs + uint32(math.Pow(2, float64(32-r.mask))) - 1
 		if ip32 >= rs && ip32 <= re {
-			return db.Dc[record.id], nil
+			return &Result{
+				Cidr:      fmt.Sprintf("%s/%d", Long2Ip(rs).To4(), r.mask),
+				Continent: db.Continent[r.continentID],
+				Country:   db.Country[r.countryID],
+				Area:      db.Area[r.areaID],
+				Region:    db.Region[r.regionID],
+				City:      db.City[r.cityID],
+				Isp:       db.Isp[r.ispID],
+			}, nil
 		}
-		if ip32 > re {f = m + 1}
-		if ip32 < rs {l = m - 1}
+		if ip32 > re {
+			f = m + 1
+		}
+		if ip32 < rs {
+			l = m - 1
+		}
 
-		//fmt.Printf(" (ip32)=%d[%s], (rs)=%d[%s], (re)=%d[%s], (mask)=%d\n", ip32, Long2Ip(ip32).To4(), rs, Long2Ip(rs).To4(), re, Long2Ip(re).To4(), record.mask)
+		//fmt.Printf(" (ip32)=%d[%s], (rs)=%d[%s], (re)=%d[%s], (mask)=%d\n",
+		//	ip32, Long2Ip(ip32).To4(), rs, Long2Ip(rs).To4(), re, Long2Ip(re).To4(), r.mask)
 
 	}
-	return "", errors.New("Unknown error")
+	return nil, errors.New("Unknown error")
 }

@@ -18,19 +18,11 @@ func TestHeader(t *testing.T) {
 		t.Fatal("Init failed:", err)
 	}
 	t.Logf("db Header = %v", db.Head)
-	ip := "152.63.123.32"
+	ip := "42.63.123.32"
 	result, err := db.Find(ip)
-	if err == nil { t.Logf("find %s => %s", ip, result)}
-}
-
-func TestLookup(t *testing.T) {
-	if db, err = Load(data); err != nil {
-		t.Fatal("Init failed:", err)
+	if err == nil {
+		t.Logf("find %s => %+v", ip, result)
 	}
-	t.Logf("db Header = %v", db.Head)
-	ip := "152.63.123.32"
-	result, err := db.Lookup(ip)
-	if err == nil { t.Logf("lookup %s country=> %s", ip, result.Country)}
 }
 
 //-----------------------------------------------------------------------------
@@ -47,10 +39,9 @@ func BenchmarkFind(b *testing.B) {
 	b.StartTimer()
 
 	for i := 0; i < b.N; i++ {
-		rnd_ip := rand.Uint32()
-		if _, err := db.FindByUint(rnd_ip); err != nil {
-			b.Fatalf("FindByUint %d[%s]: %s", rnd_ip, Long2Ip(rnd_ip).To4(), err.Error())
+		rndip := uint32(708803360)
+		if _, err := db.FindByUint(rndip); err != nil {
+			b.Fatalf("FindByUint %d[%s]: %s", rndip, Long2Ip(rndip).To4(), err.Error())
 		}
 	}
 }
-
