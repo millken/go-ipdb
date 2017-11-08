@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-const data = "ipdb.dat"
+const data = "dbv2.dat"
 
 var (
 	db  *DB
