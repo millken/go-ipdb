@@ -173,10 +173,6 @@ func (db *DB) Find(ipv4 string) (result *Result, err error) {
 	return db.FindByUint(ip32)
 }
 
-func (db *DB) Lookup(ipv4 string) (*Result, error) {
-	return nil, nil
-}
-
 func (db *DB) findStartIdxOffset(ip uint32) (start int) {
 	ipFirst := int(ip >> 24)
 	start = 0
@@ -239,10 +235,6 @@ func (db *DB) FindByUint(ip uint32) (result *Result, err error) {
 		if ip < rs {
 			l = m - 1
 		}
-
-		//fmt.Printf(" (ip32)=%d[%s], (rs)=%d[%s], (re)=%d[%s], (mask)=%d\n",
-		//	ip32, Long2Ip(ip32).To4(), rs, Long2Ip(rs).To4(), re, Long2Ip(re).To4(), r.mask)
-
 	}
-	return nil, errors.New("Unknown error")
+	return nil, errors.New("Not Found")
 }
