@@ -91,7 +91,7 @@ func (db *DB) Init(data []byte) {
 			binary.BigEndian.Uint16(pack[:2]),
 			string(pack[2 : 2+2]),
 		}
-		db.Continent[dc.id] = dc.name
+		db.Continent[dc.id] = strings.Trim(dc.name, "\u0000")
 		//fmt.Printf("dc = %+v", dc)
 	}
 	db.Country = make(map[uint16]string, db.Head.countryLen)
@@ -102,7 +102,7 @@ func (db *DB) Init(data []byte) {
 			binary.BigEndian.Uint16(pack[:2]),
 			string(pack[2 : 2+2]),
 		}
-		db.Country[dc.id] = dc.name
+		db.Country[dc.id] = strings.Trim(dc.name, "\u0000")
 		//fmt.Printf("dc = %+v", dc)
 	}
 	db.Area = make(map[uint16]string, db.Head.areaLen)
@@ -113,7 +113,7 @@ func (db *DB) Init(data []byte) {
 			binary.BigEndian.Uint16(pack[:2]),
 			string(pack[2 : 2+64]),
 		}
-		db.Area[dc.id] = dc.name
+		db.Area[dc.id] = strings.Trim(dc.name, "\u0000")
 		//fmt.Printf("dc = %+v", dc)
 	}
 	db.Region = make(map[uint16]string, db.Head.regionLen)
@@ -125,7 +125,7 @@ func (db *DB) Init(data []byte) {
 			binary.BigEndian.Uint16(pack[:2]),
 			string(pack[2 : 2+64]),
 		}
-		db.Region[dc.id] = dc.name
+		db.Region[dc.id] = strings.Trim(dc.name, "\u0000")
 		//fmt.Printf("dc = %+v", dc)
 	}
 	db.City = make(map[uint16]string, db.Head.cityLen)
@@ -137,7 +137,7 @@ func (db *DB) Init(data []byte) {
 			binary.BigEndian.Uint16(pack[:2]),
 			string(pack[2 : 2+64]),
 		}
-		db.City[dc.id] = dc.name
+		db.City[dc.id] = strings.Trim(dc.name, "\u0000")
 		//fmt.Printf("dc = %+v", dc)
 	}
 	db.Isp = make(map[uint16]string, db.Head.ispLen)
@@ -149,7 +149,7 @@ func (db *DB) Init(data []byte) {
 			binary.BigEndian.Uint16(pack[:2]),
 			string(pack[2 : 2+64]),
 		}
-		db.Isp[dc.id] = dc.name
+		db.Isp[dc.id] = strings.Trim(dc.name, "\u0000")
 		//fmt.Printf("dc = %+v", dc)
 	}
 	db.Rstart = METALEN + int(db.Head.continentLen)*4 + int(db.Head.countryLen)*4 +
@@ -222,12 +222,12 @@ func (db *DB) FindByUint(ip uint32) (result *Result, err error) {
 		if ip >= rs && ip <= re {
 			return &Result{
 				Cidr:      fmt.Sprintf("%s/%d", Long2Ip(rs).To4(), r.mask),
-				Continent: strings.TrimSpace(db.Continent[r.continentID]),
-				Country:   strings.TrimSpace(db.Country[r.countryID]),
-				Area:      strings.TrimSpace(db.Area[r.areaID]),
-				Region:    strings.TrimSpace(db.Region[r.regionID]),
-				City:      strings.TrimSpace(db.City[r.cityID]),
-				Isp:       strings.TrimSpace(db.Isp[r.ispID]),
+				Continent: db.Continent[r.continentID],
+				Country:   db.Country[r.countryID],
+				Area:      db.Area[r.areaID],
+				Region:    db.Region[r.regionID],
+				City:      db.City[r.cityID],
+				Isp:       db.Isp[r.ispID],
 			}, nil
 		}
 		if ip > re {

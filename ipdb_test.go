@@ -21,7 +21,7 @@ func TestHeader(t *testing.T) {
 	ip := "42.63.123.32"
 	result, err := db.Find(ip)
 	if err == nil {
-		t.Logf("find %s => %+v", ip, result)
+		t.Logf("find %s => %+v %d", ip, result, len(result.Isp))
 	}
 }
 
