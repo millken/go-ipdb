@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"math"
 	"net"
+	"strings"
 	//"fmt"
 )
 
@@ -221,12 +222,12 @@ func (db *DB) FindByUint(ip uint32) (result *Result, err error) {
 		if ip >= rs && ip <= re {
 			return &Result{
 				Cidr:      fmt.Sprintf("%s/%d", Long2Ip(rs).To4(), r.mask),
-				Continent: db.Continent[r.continentID],
-				Country:   db.Country[r.countryID],
-				Area:      db.Area[r.areaID],
-				Region:    db.Region[r.regionID],
-				City:      db.City[r.cityID],
-				Isp:       db.Isp[r.ispID],
+				Continent: strings.TrimSpace(db.Continent[r.continentID]),
+				Country:   strings.TrimSpace(db.Country[r.countryID]),
+				Area:      strings.TrimSpace(db.Area[r.areaID]),
+				Region:    strings.TrimSpace(db.Region[r.regionID]),
+				City:      strings.TrimSpace(db.City[r.cityID]),
+				Isp:       strings.TrimSpace(db.Isp[r.ispID]),
 			}, nil
 		}
 		if ip > re {
