@@ -199,6 +199,9 @@ func (db *DB) findEndIdxOffset(ip uint32) (end int) {
 }
 
 func (db *DB) FindByUint(ip uint32) (result *Result, err error) {
+	if db == nil || db.Rstart == 0 {
+		return nil, errors.New("unload db first")
+	}
 	f := db.findStartIdxOffset(ip)
 	n := 0
 	l := db.findEndIdxOffset(ip)
